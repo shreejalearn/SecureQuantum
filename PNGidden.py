@@ -7,7 +7,7 @@ import os
 import cirq
 from random import choices
 
-STOP_INDICATOR = "$###STOP###$"
+STOP_INDICATOR = "$STOP$"
 
 def is_file_exists(file_path: str) -> bool:
     return os.path.isfile(file_path)
@@ -38,8 +38,13 @@ def get_png_path_from_user() -> str:
 def get_secret_message_from_user() -> str:
     secret_message = input("Enter your secret message -> ")
     while len(secret_message) == 0:
-        secret_message = input("Message can not be empty... Try again -> ")
+        print("[bold red]Message can not be empty... \nTry again -> ")
+        secret_message = input()
 
+    while len(secret_message) > 9:
+        print("[bold red]Message can not be more than 11 characters... \nTry again -> ")
+        secret_message = input()
+    
     return secret_message
 
 def hide_message_in_image(image_path: str, message_to_hide: str, key) -> None:
@@ -64,12 +69,9 @@ def hide_message_in_image(image_path: str, message_to_hide: str, key) -> None:
         print("[bold red]Not enough space to encode the message")
         return
     else:
-        index = 0
-        for i in range(pixels):
-            for j in range(0, 3):
-                if index < bits:
-                    img_arr[i][j] = int(bin(img_arr[i][j])[2:-1] + byte_message[index], 2)
-                    index += 1
+        # Encode the entire message
+        for i in range(bits):
+            img_arr[i // 3][i % 3] = int(bin(img_arr[i // 3][i % 3])[2:-1] + byte_message[i], 2)
     img_arr = img_arr.reshape((height, width, channels))
     result = PIL.Image.fromarray(img_arr.astype('uint8'), image.mode)
     encoded_image_path = f"encoded-{timestamp()}.png"
@@ -86,7 +88,7 @@ def extract_message_from_image(image_path: str, key) -> None:
     channels = 4 if image.mode == 'RGBA' else 3
     pixels = img_arr.size // channels
 
-    secret_bits = [bin(img_arr[i][j])[-1] for i in range(pixels) for j in range(0, 3)]
+    secret_bits = [bin(img_arr[i // 3][i % 3])[-1] for i in range(pixels * 3)]
     secret_bits = ''.join(secret_bits)
     secret_bits = [secret_bits[i:i+8] for i in range(0, len(secret_bits), 8)]
 
